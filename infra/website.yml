@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  HostedZoneId:
+    Type: String
+    Default: Z01968701K2UVX5BEXS3Q
+  CertificateARN:
+    Type: String
+    Default: 'arn:aws:acm:us-east-1:250546337490:certificate/2f237297-85db-4c92-a7ce-7782aad3b754' 
+Resources:
+  S3WebsiteContent:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub easytransfer-content-origin
+  CloudfrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties: 
+      OriginAccessControlConfig: 
+        Name: easyTransferOAC
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+  CloudfrontDistro:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - app.noannselegar.cloud
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateARN
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+        - DomainName: !Sub ${S3WebsiteContent}.s3.amazonaws.com
+          Id: s3-content-origin
+          OriginAccessControlId: !GetAtt CloudfrontOAC.Id
+          S3OriginConfig: {}
+        Enabled: 'true'
+        DefaultRootObject: index.html
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - GET
+          - HEAD
+          TargetOriginId: s3-content-origin
+          ViewerProtocolPolicy: redirect-to-https 
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3WebsiteContent
+      PolicyDocument:
+        Version: "2008-10-17"
+        Id: PolicyForCloudFrontPrivateContent
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipal
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub arn:aws:s3:::${S3WebsiteContent}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::250546337490:distribution/${CloudfrontDistro}
+  Records:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      RecordSets:
+        - Name: app.noannselegar.cloud
+          Type: A  
+          AliasTarget:
+            DNSName: !GetAtt CloudfrontDistro.DomainName
+            HostedZoneId: Z2FDTNDATAQYW2 

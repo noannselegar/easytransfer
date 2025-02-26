@@ -1,0 +1,7 @@
+# Deploy website infra
+
+aws cloudformation deploy \
+--stack-name MyWebsite \
+--template-file ./infra/website.yml \
+--region us-east-1 \
+--no-execute-changeset
