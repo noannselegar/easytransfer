@@ -1,0 +1,32 @@
+name: GitHub Actions Demo
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - webapp/*
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  Deploy Website:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials
+        use: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GH_OIDC_ROLE_ARN }}
+          role-session-name: easytransfer 
+          region: us-east-1
+
+      - name: Checkout
+        use: actions/checkout@v4
+
+      - name: Sync to S3 Bucket
+        run: |
+          echo "=== Sync Content to S3 Bucket ==="
+          aws s3 sync webapp/ s3://${{ vars.WEBSITE_CONTENT_BUCKET_NAME }} --delete
+          echo "=== Sync Complete ==="
+
