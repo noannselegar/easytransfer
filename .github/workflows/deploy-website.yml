@@ -34,8 +34,8 @@ jobs:
         run: |
           echo "=== Creating Invalidation ==="
           aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths /*
+            --distribution-id="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths="/*"
           echo "=== Invalidation created ==="
 
 
