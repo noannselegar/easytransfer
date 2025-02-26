@@ -30,3 +30,13 @@ jobs:
           aws s3 sync webapp/ s3://${{ vars.WEBSITE_CONTENT_BUCKET_NAME }} --delete
           echo "=== Sync Complete ==="
 
+      - name: Create CF Invalidation
+        run: |
+          echo "=== Creating Invalidation ==="
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secret.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths /*
+          echo "=== Invalidation created ==="
+
+
+
