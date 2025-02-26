@@ -19,7 +19,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.GH_OIDC_ROLE_ARN }}
           role-session-name: easytransfer 
-          region: us-east-1
+          aws-region: us-east-1
 
       - name: Checkout
         uses: actions/checkout@v4
