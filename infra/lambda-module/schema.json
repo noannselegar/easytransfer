@@ -1,0 +1,161 @@
+{
+    "typeName": "noannselegar::Lambda::Function::MODULE",
+    "description": "Schema for Module Fragment of type noannselegar::Lambda::Function::MODULE",
+    "properties": {
+        "Parameters": {
+            "type": "object",
+            "properties": {
+                "FunctionName": {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string"
+                        },
+                        "Description": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Description"
+                    ],
+                    "description": "Name for the function"
+                },
+                "Description": {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "Type"
+                    ]
+                },
+                "PackageType": {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string"
+                        },
+                        "Description": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Description"
+                    ],
+                    "description": "Zip or Image."
+                },
+                "ImageURI": {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string"
+                        },
+                        "Description": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Description"
+                    ],
+                    "description": "Container image URI in ECR."
+                },
+                "Runtime": {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string"
+                        },
+                        "Description": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Description"
+                    ],
+                    "description": "AWS compatible runtime for the function."
+                },
+                "Handler": {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string"
+                        },
+                        "Description": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Description"
+                    ],
+                    "description": "Handler function (<file>.<main-function>)."
+                },
+                "MemorySize": {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string"
+                        },
+                        "Description": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Description"
+                    ],
+                    "description": "Memory available to the function in increments of 1MB."
+                }
+            }
+        },
+        "Resources": {
+            "properties": {
+                "Role": {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "const": "AWS::IAM::Role"
+                        },
+                        "Properties": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "Lambda": {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "const": "AWS::Lambda::Function"
+                        },
+                        "Properties": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "LogGroup": {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "const": "AWS::Logs::LogGroup"
+                        },
+                        "Properties": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "type": "object",
+            "additionalProperties": false
+        }
+    },
+    "additionalProperties": true
+}

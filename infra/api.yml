@@ -1,0 +1,150 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Creates an HTTP API with three routes, each backed by a separate Lambda.
+  Any unmatched route returns 404 by default.
+Resources:
+  ############################################################
+  # 1) The HTTP API itself
+  ############################################################
+  CoreAPI:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: easytransfer-core-api 
+      Description: Core API that serves as Easy Transfer's backend integrating with Lambda.
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - 'https://app.noannselegar.cloud'
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+
+  ############################################################
+  # 2) Three Lambda Functions
+  ############################################################
+  LambdaGenerateURL:
+    Type: noannselegar::Lambda::Function::MODULE
+    Properties:
+      FunctionName: easytransfer-generate-presigned-url
+      Description: Lambda that generates Pre-signed URLs in S3.
+      PackageType: Zip
+      Handler: index.handler
+      Runtime: python3.12
+
+  LambdaSendEmail:
+    Type: noannselegar::Lambda::Function::MODULE
+    Properties:
+      FunctionName: easytransfer-send-download-email
+      Description: Lambda that sends an email with a download link to the receiver.
+      PackageType: Zip
+      Handler: index.handler
+      Runtime: python3.12
+
+  LambdaGetFileMetadata:
+    Type: noannselegar::Lambda::Function::MODULE
+    Properties:
+      FunctionName: easytransfer-get-file-metadata
+      Description: Lambda that returns metadata of a file to the frontend.
+      PackageType: Zip
+      Handler: index.handler
+      Runtime: python3.12
+
+  ############################################################
+  # 3) API Integrations for Each Lambda
+  ############################################################
+  IGenerateURL:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref CoreAPI
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt LambdaGenerateURL.Arn
+      PayloadFormatVersion: '2.0'
+
+  ISendEmail:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref CoreAPI
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt LambdaSendEmail.Arn
+      PayloadFormatVersion: '2.0'
+
+  IGetMetadata:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref CoreAPI 
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt LambdaGetFileMetadata.Arn
+      PayloadFormatVersion: '2.0'
+
+  ############################################################
+  # 4) Three Routes
+  #    No $default route => Unmatched requests return 404
+  ############################################################
+  Route1:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref CoreAPI
+      RouteKey: "POST /api/upload"
+      Target: !Sub "integrations/${IGenerateURL}"
+
+  Route2:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref CoreAPI
+      RouteKey: "POST /api/send"
+      Target: !Sub "integrations/${ISendEmail}"
+
+  Route3:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref CoreAPI
+      RouteKey: "GET /api/download/{fileId}"
+      Target: !Sub "integrations/${IGetMetadata}"
+
+  ############################################################
+  # 5) Stage with Auto-Deploy (makes the API live)
+  ############################################################
+  DefaultStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref CoreAPI 
+      StageName: "$default"
+      AutoDeploy: true
+
+  ############################################################
+  # 6) Lambda Permissions for API Gateway to Invoke Functions
+  ############################################################
+  LambdaPermissionGenerateURL:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !GetAtt LambdaGenerateURL.Arn
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CoreAPI}/*/POST/api/upload"
+
+  LambdaPermissionSendEmail:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !GetAtt LambdaSendEmail.Arn
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CoreAPI}/*/POST/api/send"
+
+  LambdaPermissionGetMetadata:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !GetAtt LambdaGetFileMetadata.Arn
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CoreAPI}/*/GET/api/download/*"
+
+Outputs:
+  HttpApiId:
+    Description: "HTTP API ID"
+    Value: !Ref CoreAPI 
+
+  HttpApiEndpoint:
+    Description: "Invoke URL for the default stage"
+    Value: !Sub "https://${CoreAPI}.execute-api.${AWS::Region}.amazonaws.com"
+

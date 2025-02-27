@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  LambdaGenerateURL:
+    Type: noannselegar::Lambda::Function::MODULE
+    Properties:
+      FunctionName: easytransfer-generate-presigned-url
+      Description: Lambda that generates Pre-signed URLs in S3.
+      PackageType: Zip
+      Handler: index.handler
+      Runtime: python3.12
