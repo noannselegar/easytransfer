@@ -1,0 +1,114 @@
+name: Deploy Infra 🔨
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - infra/*
+
+env:
+  AWS_REGION: us-east-1
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  check-changes:
+    name: Check for Template Changes
+    runs-on: ubuntu-latest
+    outputs:
+      templates: ${{ steps.check.outputs.infra_files }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+
+      - name: Check changed templates 
+        id: check
+        run: | 
+          # Get the names of changed templates between the current and the last commit
+          changed_files=$(git diff --name-only HEAD~1 HEAD)
+          infra_filenames=$(echo "$changed_files" | grep '^infra/[^/]*\.yml$' | awk -F'/' '{print $NF}')
+          json_output=$(echo "$infra_filenames" | jq -c -R -s 'split("\n") | map(select(. != ""))')
+          echo "templates=$json_output" >> "$GITHUB_OUTPUT"
+
+  create-change-sets:
+    needs: check-changes
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        template: ${{ fromJson(needs.check-changes.outputs.templates) }}
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GH_OIDC_ROLE_ARN }}
+          role-session-name: easytransfer 
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Process file
+        run: |
+          STACK=$(basename "${{ matrix.template }}" .yml)
+  
+          echo "=== Create ChangeSet and Store ID in a Variable ==="
+          CHANGESET_ID=$(aws cloudformation create-change-set \
+            --change-set-name "${STACK}-$(date +%Y%m%d%H%M%S)" \
+            --stack-name $STACK \
+            --template-body file://infra/${{ matrix.template }} \
+            --region "${{ env.AWS_REGION }}" \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --on-stack-failure ROLLBACK \
+            --query 'Id' \
+            --output text)
+
+          echo "=== Forwarding ChangeSet ID to Next Step ==="
+          echo "CHANGESET_ID=$CHANGESET_ID" >> $GITHUB_ENV
+          echo "STACK_NAME=$STACK" >> $GITHUB_ENV
+
+      - name: Matrix Output
+        uses: beacon-biosignals/matrix-output@v1
+        id: matrix-output
+        with:
+          yaml: |
+            changeset-id: ${{ env.CHANGESET_ID }}
+            stack-name: ${{ env.STACK_NAME }}
+
+    outputs:
+      json: ${{ steps.matrix-output.outputs.json }}
+  
+  execute-change-sets:
+    needs: create-change-sets
+    runs-on: ubuntu-latest
+    environment: infra-prd
+    strategy:
+      fail-fast: false
+      matrix:
+        json: ${{ fromJson(needs.create-change-sets.outputs.json) }}
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GH_OIDC_ROLE_ARN }}
+          role-session-name: easytransfer 
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Execute Changeset
+        run: |
+          CHANGESET_ID="${{ matrix.json.changeset-id }}"
+          STACK_NAME="${{ matrix.json.stack-name }}"
+          echo "=== Executing Changeset ==="
+          echo "=== Stack: $STACK_NAME ==="
+
+          aws cloudformation execute-change-set \
+            --change-set-name $CHANGESET_ID 
+
+          echo "=== Executed Changeset ==="
