@@ -59,16 +59,31 @@ jobs:
         run: |
           STACK=$(basename "${{ matrix.template }}" .yml)
   
-          echo "=== Create ChangeSet and Store ID in a Variable ==="
-          CHANGESET_ID=$(aws cloudformation create-change-set \
-            --change-set-name "${STACK}-$(date +%Y%m%d%H%M%S)" \
-            --stack-name $STACK \
-            --template-body file://infra/${{ matrix.template }} \
-            --region "${{ env.AWS_REGION }}" \
-            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-            --on-stack-failure ROLLBACK \
-            --query 'Id' \
-            --output text)
+          echo "=== Checking if stack exists ==="
+          if aws cloudformation describe-stacks --stack-name "$STACK" --region "${{ env.AWS_REGION }}" >/dev/null 2>&1; then
+            echo "Stack exists. Creating changeset and storing in a variable."
+            CHANGESET_ID=$(aws cloudformation create-change-set \
+              --change-set-name "${STACK}-$(date +%Y%m%d%H%M%S)" \
+              --stack-name $STACK \
+              --template-body file://infra/${{ matrix.template }} \
+              --region "${{ env.AWS_REGION }}" \
+              --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+              --on-stack-failure ROLLBACK \
+              --query 'Id' \
+              --output text)
+          else
+            echo "Stack does not exist. Creating stack $STACK."
+            aws cloudformation create-stack \
+              --stack-name "$STACK" \
+              --template-body file://infra/${{ matrix.template }} \
+              --region "${{ env.AWS_REGION }}" \
+              --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
+          fi
+
+          if [ -z "$CHANGESET_ID" ]; then
+            echo "CHANGESET_ID is empty or not set. Skipping next Job."
+            echo "SKIP=true" >> $GITHUB_ENV
+          fi
 
           echo "=== Forwarding ChangeSet ID to Next Step ==="
           echo "CHANGESET_ID=$CHANGESET_ID" >> $GITHUB_ENV
@@ -81,6 +96,7 @@ jobs:
           yaml: |
             changeset-id: ${{ env.CHANGESET_ID }}
             stack-name: ${{ env.STACK_NAME }}
+            skip: ${{ env.SKIP }}
 
     outputs:
       json: ${{ steps.matrix-output.outputs.json }}
@@ -96,6 +112,14 @@ jobs:
       matrix:
         json: ${{ fromJson(needs.create-change-sets.outputs.json) }}
     steps:
+      - name: Exit Early If Nothing to Do
+        run: |
+          SKIP=${{ matrix.json.skip }}
+          if [ SKIP == "true" ]; then
+            echo "=== Nothing to do. Exiting job ==="
+            exit 0
+          fi
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:

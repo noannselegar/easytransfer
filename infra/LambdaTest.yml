@@ -8,5 +8,3 @@ Resources:
       PackageType: Zip
       Handler: index.handler
       Runtime: python3.12
-
-
