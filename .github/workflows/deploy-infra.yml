@@ -34,6 +34,7 @@ jobs:
           echo "templates=$json_output" >> "$GITHUB_OUTPUT"
 
   create-change-sets:
+    name: Create Change Set
     needs: check-changes
     runs-on: ubuntu-latest
     permissions:
@@ -102,6 +103,7 @@ jobs:
       json: ${{ steps.matrix-output.outputs.json }}
   
   execute-change-sets:
+    name: Execute Change Set
     needs: create-change-sets
     runs-on: ubuntu-latest
     environment: infra-prd
@@ -115,7 +117,7 @@ jobs:
       - name: Exit Early If Nothing to Do
         run: |
           SKIP=${{ matrix.json.skip }}
-          if [ SKIP == "true" ]; then
+          if [ $SKIP == "true" ]; then
             echo "=== Nothing to do. Exiting job ==="
             exit 0
           fi
