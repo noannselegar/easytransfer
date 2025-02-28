@@ -10,14 +10,12 @@ on:
 env:
   AWS_REGION: us-east-1
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   check-changes:
     name: Check for Template Changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       templates: ${{ steps.check.outputs.templates }}
     steps:
@@ -40,6 +38,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: read
+      id-token: write
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -89,6 +89,8 @@ jobs:
     needs: create-change-sets
     runs-on: ubuntu-latest
     environment: infra-prd
+    permissions:
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
