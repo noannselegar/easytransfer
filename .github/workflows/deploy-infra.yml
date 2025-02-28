@@ -19,7 +19,7 @@ jobs:
     name: Check for Template Changes
     runs-on: ubuntu-latest
     outputs:
-      templates: ${{ steps.check.outputs.infra_files }}
+      templates: ${{ steps.check.outputs.templates }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
