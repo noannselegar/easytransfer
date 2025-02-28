@@ -7,4 +7,4 @@ Resources:
       Description: Lambda that generates Pre-signed URLs in S3.
       PackageType: Zip
       Handler: index.handler
-      Runtime: python3.12
+      Runtime: python3.11
