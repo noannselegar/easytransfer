@@ -90,6 +90,63 @@ jobs:
           echo "CHANGESET_ID=$CHANGESET_ID" >> $GITHUB_ENV
           echo "STACK_NAME=$STACK" >> $GITHUB_ENV
 
+      - name: Describe Change Set
+        run: |
+          sleep 5
+          CHANGESET=$(aws cloudformation describe-change-set \
+            --change-set-name $CHANGESET_ID \
+            --output json)
+          echo "CHANGESET=$CHANGESET" >> $GITHUB_ENV
+
+      - name: Prepare Summary.md
+        uses: actions/github-script
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const changeSet = JSON.parse(process.env.CHANGESET);
+
+            const { StackName, Status, ExecutionStatus, Changes } = changeSet;
+
+            let output = `# CloudFormation Change Set Report\n\n`;
+            output += `**Stack Name:** ${StackName}\n`;
+            output += `**Status:** ${Status}\n`;
+            output += `**Execution Status:** ${ExecutionStatus}\n\n`;
+            output += `## Changes\n\n`;
+
+            if (Changes && Changes.length > 0) {
+              Changes.forEach((change, index) => {
+                const { ResourceChange } = change;
+                output += `### Change ${index + 1}\n`;
+                output += `- **Action:** ${ResourceChange.Action}\n`;
+                output += `- **Resource Type:** ${ResourceChange.ResourceType}\n`;
+                output += `- **Logical ID:** ${ResourceChange.LogicalResourceId}\n`;
+
+                if (ResourceChange.Replacement === 'True') {
+                  output += `- :warning: **Replacement Required**\n`;
+                }
+
+                if (ResourceChange.Details && ResourceChange.Details.length > 0) {
+                  output += `#### Change Details:\n`;
+                  ResourceChange.Details.forEach((detail) => {
+                    output += `  - **Attribute:** ${detail.Target.Attribute}\n`;
+                    output += `  - **Change Type:** ${detail.ChangeSource}\n`;
+                  });
+                }
+
+                output += `\n`;
+              });
+            } else {
+              output += "_No changes detected._\n";
+            }
+
+            const fs = require('fs');
+            fs.writeFileSync("summary.md", output);
+
+      - name: Write Summary
+        run: |
+          cat summary.md >> $GITHUB_STEP_SUMMARY
+          rm -rf summary.md
+
       - name: Matrix Output
         uses: beacon-biosignals/matrix-output@v1
         id: matrix-output
