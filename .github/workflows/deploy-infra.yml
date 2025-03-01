@@ -93,16 +93,19 @@ jobs:
       - name: Describe Change Set
         run: |
           sleep 5
-          CHANGESET=$(aws cloudformation describe-change-set \
+          echo "=== Describe ChangeSet into a JSON file ==="
+          aws cloudformation describe-change-set \
             --change-set-name $CHANGESET_ID \
-            --output json)
-          echo "CHANGESET=$CHANGESET" >> $GITHUB_ENV
+            --output json > changeset.json
 
       - name: Prepare Summary.md
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const fs = require('fs');
+
+            const rawData = fs.readFileSync("changeset.json");
             const changeSet = JSON.parse(process.env.CHANGESET);
 
             const { StackName, Status, ExecutionStatus, Changes } = changeSet;
@@ -139,7 +142,6 @@ jobs:
               output += "_No changes detected._\n";
             }
 
-            const fs = require('fs');
             fs.writeFileSync("summary.md", output);
 
       - name: Write Summary
