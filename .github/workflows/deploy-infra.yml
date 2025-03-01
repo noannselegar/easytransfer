@@ -106,7 +106,7 @@ jobs:
             const fs = require('fs');
 
             const rawData = fs.readFileSync("changeset.json");
-            const changeSet = JSON.parse(process.env.CHANGESET);
+            const changeSet = JSON.parse(rawData);
 
             const { StackName, Status, ExecutionStatus, Changes } = changeSet;
 
