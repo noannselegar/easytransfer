@@ -81,4 +81,3 @@ Resources:
           AliasTarget:
             DNSName: !GetAtt CloudfrontDistro.DomainName
             HostedZoneId: Z2FDTNDATAQYW2 
-

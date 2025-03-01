@@ -147,3 +147,4 @@ Outputs:
   HttpApiEndpoint:
     Description: "Invoke URL for the default stage"
     Value: !Sub "https://${CoreAPI}.execute-api.${AWS::Region}.amazonaws.com"
+
