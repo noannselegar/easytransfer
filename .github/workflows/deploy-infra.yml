@@ -11,7 +11,7 @@ on:
     inputs:
       templates:
         required: true
-        description: JSON String for a list containing the templates to deploy.
+        description: Comma separated list containing the templates to deploy.
 
 env:
   AWS_REGION: us-east-1
@@ -33,8 +33,9 @@ jobs:
       - name: Check changed templates 
         id: check
         run: | 
-          if [ ${{ github.event_name == "workflow_dispatch" ]; then
-            echo "templates=${{ inputs.templates }}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            json_output=$(echo "${{ inputs.templates }}" | jq -c -R -s 'split("\n") | map(select(. != ""))')
+            echo "templates=$json_output" >> $GITHUB_OUTPUT
           else
             # Get the names of changed templates between the current and the last commit
             changed_files=$(git diff --name-only HEAD~1 HEAD)
