@@ -91,6 +91,7 @@ jobs:
           echo "STACK_NAME=$STACK" >> $GITHUB_ENV
 
       - name: Describe Change Set
+        if: ${{ env.SKIP == 'true' }}
         run: |
           sleep 5
           echo "=== Describe ChangeSet into a JSON file ==="
@@ -99,6 +100,7 @@ jobs:
             --output json > changeset.json
 
       - name: Prepare Summary.md
+        if: ${{ env.SKIP == 'true' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -145,6 +147,7 @@ jobs:
             fs.writeFileSync("summary.md", output);
 
       - name: Write Summary
+        if: ${{ env.SKIP == 'true' }}
         run: |
           cat summary.md >> $GITHUB_STEP_SUMMARY
           rm -rf summary.md
