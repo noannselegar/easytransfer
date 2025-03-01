@@ -99,7 +99,7 @@ jobs:
           echo "CHANGESET=$CHANGESET" >> $GITHUB_ENV
 
       - name: Prepare Summary.md
-        uses: actions/github-script
+        uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
