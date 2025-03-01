@@ -34,7 +34,7 @@ jobs:
         id: check
         run: | 
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            json_output=$(echo "${{ inputs.templates }}" | jq -c -R -s 'split("\n") | map(select(. != ""))')
+            json_output=$(echo "${{ inputs.templates }}" | jq -c -R 'split(",")')
             echo "templates=$json_output" >> $GITHUB_OUTPUT
           else
             # Get the names of changed templates between the current and the last commit
