@@ -1,0 +1,81 @@
+name: Deploy Lambdas 🚀  
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - functions/*
+  # Testing
+  workflow_dispatch:
+    inputs:
+      lambdas:
+        required: true
+        description: Comma separated list containing the lambdas to deploy.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  check-changes:
+    name: Check for Lambda Changes
+    runs-on: ubuntu-latest
+    outputs:
+      lambdas: ${{ steps.check.outputs.lambdas }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+
+      - name: Check changed functions
+        id: check
+        run: | 
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            json_output=$(echo "${{ inputs.lambdas }}" | jq -c -R 'split(",")')
+            echo "lambdas=$json_output" >> $GITHUB_OUTPUT
+          else
+            # Get the names of changed templates between the current and the last commit
+            changed_files=$(git diff --name-only HEAD~1 HEAD)
+            changed_folders=$(echo "$changed_files" | grep '^functions/' | awk -F'/' '{print $2}')
+            json_output=$(echo "$changed_folders" | jq -c -R -s 'split("\n") | map(select(. != "")) | unique')
+            echo "lambdas=$json_output" >> "$GITHUB_OUTPUT"
+          fi
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Lambdas
+    strategy:
+      fail-fast: false
+      matrix:
+        lambda: ${{ fromJson(needs.check-changes.outputs.lambdas) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GH_OIDC_ROLE_ARN }}
+          role-session-name: easytransfer 
+          aws-region: us-east-1
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Build Ruby Function
+        working-directory: ./functions/${{ matrix.lambda }}
+        run: |
+          LAMBDA="${{ matrix.lambda }}"
+          bundle config set path vendor/bundle
+          bundle install
+          zip -r lambda.zip . -x "vendor/bundle/ruby/*/cache/*"
+
+      - name: Update Lambda Code
+        working-directory: ./functions/${{ matrix.lambda }}
+        run: |
+          LAMBDA_AWS_NAME=$(cat ../../pipeline.json | jq -r '."generate-url"')
+          aws lambda update-function-code \
+            --function-name $LAMBDA_AWS_NAME \
+            --zip-file fileb://lambda.zip

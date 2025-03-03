@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'terraform-state-bucket-easytransfer'
+      VersioningConfiguration:
+        Status: 'Enabled'
+      LifecycleConfiguration:
+        Rules:
+          - Status: 'Enabled'
+            ExpirationInDays: 365
+            Prefix: 'terraform-state/'
+
+  DynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: 'terraform-lock-table'
+      AttributeDefinitions:
+        - AttributeName: 'LockID'
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: 'LockID'
+          KeyType: 'HASH'
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
