@@ -6,11 +6,6 @@ Resources:
       BucketName: 'terraform-state-bucket-easytransfer'
       VersioningConfiguration:
         Status: 'Enabled'
-      LifecycleConfiguration:
-        Rules:
-          - Status: 'Enabled'
-            ExpirationInDays: 365
-            Prefix: 'terraform-state/'
 
   DynamoDBTable:
     Type: 'AWS::DynamoDB::Table'

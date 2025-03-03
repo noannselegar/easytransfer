@@ -24,7 +24,3 @@ resource "aws_s3_bucket_policy" "website_content_policy" {
     ]
   })
 }
-
-locals {
-  test = "POST /api/upload/{fileId}"
-}

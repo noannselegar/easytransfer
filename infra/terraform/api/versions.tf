@@ -7,4 +7,13 @@ terraform {
       version = ">= 5.0"
     }
   }
+
+  backend "s3" {
+    bucket = "terraform-state-bucket-easytransfer"
+    key    = "api/terraform.tfstate"
+    region = "us-east-1"
+
+    dynamodb_table = "terraform-lock-table"
+    encrypt        = true
+  }
 }
