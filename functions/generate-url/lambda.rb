@@ -12,7 +12,7 @@ def handler(event:, context:)
     file_name = body["file_name"]
 
     unless valid_sha256?(file_hash)
-      return { statusCode: 400, body: JSON.generate({ error: 'Invalid SHA256 hash' }) }
+      return { statusCode: 400, body: { error: 'Invalid SHA256 hash' }.to_s }
     end
 
     s3 = Aws::S3::Client.new(region: ENV['AWS_REGION'])
@@ -25,10 +25,11 @@ def handler(event:, context:)
       key: object_key, 
       expires_in: 3600
     )
-
-    { statusCode: 200, body: JSON.generate({ url: presigned_url }) }
+    
+    { statusCode: 200, body: { url: presigned_url }.to_s }
   rescue => e
-    { statusCode: 500, body: JSON.generate({ error: e.message }) }
+    puts e.message
+    { statusCode: 500, body: { error: e.message }.to_s }
   end
 end
 
