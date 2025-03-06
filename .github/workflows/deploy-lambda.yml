@@ -43,6 +43,7 @@ jobs:
           fi
   deploy:
     runs-on: ubuntu-latest
+    needs: check-changes
     name: Deploy Lambdas
     strategy:
       fail-fast: false
