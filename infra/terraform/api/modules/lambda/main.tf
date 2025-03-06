@@ -5,10 +5,10 @@ resource "aws_lambda_function" "this" {
   handler       = var.handler
   memory_size   = var.memory_size
   role          = aws_iam_role.lambda_role.arn
-	filename      = "lambda.zip"
+  filename      = "${path.module}/lambda.zip"
 }
 
 resource "aws_cloudwatch_log_group" "logs" {
-  name 							= "/aws/lambda/${var.function_name}"
-	retention_in_days = 7
+  name              = "/aws/lambda/${var.function_name}"
+  retention_in_days = 7
 }
