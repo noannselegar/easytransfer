@@ -1,9 +1,13 @@
 require 'aws-sdk-s3'
 require 'json'
+require 'base64'
 
 def handler(event:, context:)
   begin
-    body = JSON.parse(event["body"])
+    if event["isBase64Encoded"]
+      body_decoded = Base64.decode64(event["body"])
+    end
+    body = JSON.parse(body_decoded)
     file_hash = body["file_hash"]
     file_name = body["file_name"]
 
