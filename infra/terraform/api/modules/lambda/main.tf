@@ -6,6 +6,14 @@ resource "aws_lambda_function" "this" {
   memory_size   = var.memory_size
   role          = aws_iam_role.lambda_role.arn
   filename      = "${path.module}/lambda.zip"
+
+  dynamic "environment" {
+    for_each = var.env_variables != null ? ["enabled"] : []
+
+    content {
+      variables = var.env_variables
+    }
+  }
 }
 
 resource "aws_cloudwatch_log_group" "logs" {

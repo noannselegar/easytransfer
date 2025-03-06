@@ -27,10 +27,16 @@ variable "memory_size" {
   default     = 128
 }
 
+variable "env_variables" {
+  description = "Environment variables map."
+  type        = map(string)
+  default     = null
+}
+
 variable "extra_policy_statements" {
   description = "Additional IAM policy statements for the Lambda"
-  type        = list(object({
-	  sid       = string
+  type = list(object({
+    sid       = string
     effect    = optional(string, "Allow")
     actions   = list(string)
     resources = optional(list(string), ["*"])

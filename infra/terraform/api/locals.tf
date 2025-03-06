@@ -4,6 +4,9 @@ locals {
       name        = "easytransfer-generate-presigned-url"
       description = "Generates a Presigned URL for S3: PUT or GET."
       route       = "POST /api/presign"
+      env_variables = {
+        S3_BUCKET = aws_s3_bucket.files_bucket.id
+      }
       extra_policy_statements = [
         {
           sid = "AllowGetPutS3"
