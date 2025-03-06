@@ -5,6 +5,7 @@ resource "aws_lambda_function" "this" {
   handler       = var.handler
   memory_size   = var.memory_size
   role          = aws_iam_role.lambda_role.arn
+  timeout       = var.timeout
   filename      = "${path.module}/lambda.zip"
 
   dynamic "environment" {
