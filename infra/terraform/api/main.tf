@@ -23,7 +23,7 @@ resource "aws_apigatewayv2_stage" "default_stage" {
 
 # API Integrations for Each Lambda
 resource "aws_apigatewayv2_integration" "lambdas" {
-  for_each = local.lambdas
+  for_each = local.api_lambdas
 
   api_id                 = aws_apigatewayv2_api.core_api.id
   integration_type       = "AWS_PROXY"
@@ -33,7 +33,7 @@ resource "aws_apigatewayv2_integration" "lambdas" {
 
 # Routes for Each Lambda
 resource "aws_apigatewayv2_route" "routes" {
-  for_each = local.lambdas
+  for_each = local.api_lambdas
 
   api_id    = aws_apigatewayv2_api.core_api.id
   route_key = each.value.route
@@ -42,7 +42,7 @@ resource "aws_apigatewayv2_route" "routes" {
 
 # Lambda Permissions for API Gateway to Invoke Functions
 resource "aws_lambda_permission" "permissions" {
-  for_each = local.lambdas
+  for_each = local.api_lambdas
 
   action        = "lambda:InvokeFunction"
   function_name = module.lambdas[each.key].function_name

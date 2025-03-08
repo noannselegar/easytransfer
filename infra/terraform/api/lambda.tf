@@ -1,6 +1,6 @@
 module "lambdas" {
   source   = "./modules/lambda"
-  for_each = local.lambdas
+  for_each = merge(local.api_lambdas, local.private_lambdas)
 
   function_name           = each.value.name
   description             = try(each.value.description, "N/A")

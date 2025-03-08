@@ -1,5 +1,13 @@
 locals {
-  lambdas = {
+  private_lambdas = {
+    "send_email" = {
+      name                    = "easytransfer-send-download-email"
+      description             = "Sends email with Download link for specified file."
+      env_variables           = {}
+      extra_policy_statements = []
+    }
+  }
+  api_lambdas = {
     generate_url = {
       name        = "easytransfer-generate-presigned-url"
       description = "Generates a Presigned URL for S3: PUT or GET."
@@ -22,9 +30,9 @@ locals {
         }
       ]
     }
-    send_email = {
-      name                    = "easytransfer-send-upload-email"
-      description             = "Sends email with Download link for the uploaded file."
+    save_metadata = {
+      name                    = "easytransfer-save-file-metadata"
+      description             = "Saves file metadata in DynamoDB. On success, activates the send-lambda email."
       route                   = "POST /api/upload"
       extra_policy_statements = []
     }
